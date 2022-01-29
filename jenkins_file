@@ -1,0 +1,45 @@
+pipeline {
+    agent any
+        stages {
+            stage('GIt checkout') {
+                steps {
+                    git branch: 'master',
+                    credentialsId: 'gnfishbain',
+                    url: 'https://github.com/gnfishbain/world_of_games.git'
+                }
+            }
+
+            stage('building docker file ') {
+                steps {
+                    sh 'docker build -t gnfishbain/world_of_game .'
+                }
+            }
+
+            stage('Run docker image') {
+                steps {
+                    sh 'docker run --name gameworld1 -d -t gnfishbain/world_of_game'
+                }
+            }
+
+            stage ('Test') {
+                steps {
+                    sh 'docker exec -t -d gameworld1 python /MainScores.py'
+                    sh 'docker exec -t -d gameworld1 python /tests/e2e.py'
+                   }
+            }
+
+            stage ('stop and delete') {
+                steps{
+                    sh 'docker stop gameworld1'
+                    sh 'docker rm gameworld1'
+                }
+            }
+
+            stage('Push image') {
+                 steps{
+                      sh 'docker login -u gnfishbain -p *********'
+                      sh 'docker push gnfishbain/world_of_game:latest'
+                 }
+            }
+    }
+}
